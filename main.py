@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 
@@ -5,8 +6,22 @@ import ollama
 import pdfplumber
 
 
+def get_list_of_files(dirname, file_pattern):
+    pattern = f"{dirname}/{file_pattern}*.pdf"
+    list_of_pdfs = glob.glob(pattern)
+    return list_of_pdfs
+
+
 def main():
-    filename = os.environ.get("FILE_NAME")
+    file_list = get_list_of_files(
+        os.environ.get("DIR_NAME"), os.environ.get("FILE_PATTERN")
+    )
+    for file in file_list:
+        print(f"converting file {file}")
+        convert_pdf(file)
+
+
+def convert_pdf(filename):
     table_content = extract_table_content(filename)
     # print(f"Table contents: {table_content}")
     content = sanitize_content(table_content)
