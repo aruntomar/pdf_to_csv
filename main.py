@@ -1,4 +1,5 @@
 import os
+import re
 
 import ollama
 import pdfplumber
@@ -10,17 +11,47 @@ def main():
     # print(f"Table contents: {table_content}")
     content = sanitize_content(table_content)
     # print(content)
+    csv = convert_to_csv(content)
+    save_csv(csv, filename)
+
+
+def save_csv(csv, fullpath):
+    fname, pdf_ext = os.path.basename(fullpath).split(".")
+    directory = os.path.dirname(fullpath)
+    csv_directory = os.path.join(directory, "csv")
+    csv_file = os.path.join(csv_directory, fname + ".csv")
+    if not os.path.exists(csv_directory):
+        os.mkdir(csv_directory)
+    with open(csv_file, "w") as file:
+        file.write(csv)
+
+    print(f"Success: file {csv_file} created successfully.")
+
+
+def extract_csv(text):
+    # Look for csv code block
+    match = re.search(r"```csv\s*(.*?)\s*```", text)
+    if match:
+        return match.group(1).strip()
+    # Fallback: remove leading lines like "Here is the..."
+    lines = text.splitlines()
+    csv_lines = [line for line in lines if "," in line]
+    return "\n".join(csv_lines).strip()
+
+
+def convert_to_csv(data):
     client = ollama.Client(host=os.environ.get("OLLAMA_SERVER"))
     response = client.chat(
         model="phi3:14b",
         messages=[
             {
                 "role": "user",
-                "content": f"convert this content to csv with date as the first column {content}",
+                "content": f"convert this content to csv with date as the first column {data}. output should only contain csv data",
             }
         ],
     )
-    print(response.message.content)
+    csv_data = extract_csv(response.message.content)
+    return csv_data
 
 
 def extract_table_content(filename):
