@@ -1,5 +1,6 @@
 import os
 
+import ollama
 import pdfplumber
 
 
@@ -8,7 +9,18 @@ def main():
     table_content = extract_table_content(filename)
     # print(f"Table contents: {table_content}")
     content = sanitize_content(table_content)
-    print(content)
+    # print(content)
+    client = ollama.Client(host=os.environ.get("OLLAMA_SERVER"))
+    response = client.chat(
+        model="phi3:14b",
+        messages=[
+            {
+                "role": "user",
+                "content": f"convert this content to csv with date as the first column {content}",
+            }
+        ],
+    )
+    print(response.message.content)
 
 
 def extract_table_content(filename):
